@@ -1,0 +1,137 @@
+<div class="container py-4">
+  <div class="row g-4">
+    <div class="col-12">
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <p class="text-uppercase text-primary fw-semibold small mb-2">Payments Matching</p>
+          <h1 class="h3 mb-2">{{ title() }}</h1>
+          <p class="text-muted mb-0">
+            Upload the System CSV and Provider CSV, run the match, and resolve any open items with the accepted source.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <h2 class="h5 mb-3">Upload & Run</h2>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold" for="systemFile">System CSV</label>
+            <input
+              id="systemFile"
+              type="file"
+              class="form-control"
+              accept=".csv,text/csv"
+              (change)="onSystemFileChange($event)"
+            />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold" for="providerFile">Provider CSV</label>
+            <input
+              id="providerFile"
+              type="file"
+              class="form-control"
+              accept=".csv,text/csv"
+              (change)="onProviderFileChange($event)"
+            />
+          </div>
+
+          <div *ngIf="errorMessage()" class="alert alert-danger mb-3">{{ errorMessage() }}</div>
+          <div *ngIf="successMessage()" class="alert alert-success mb-3">{{ successMessage() }}</div>
+
+          <button class="btn btn-primary w-100" type="button" [disabled]="isLoading()" (click)="runMatch()">
+            <span *ngIf="!isLoading()">Run Match</span>
+            <span *ngIf="isLoading()">Processing...</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+            <div>
+              <h2 class="h5 mb-1">Match Summary</h2>
+              <p class="text-muted mb-0">Review totals from the latest run.</p>
+            </div>
+            <div class="text-muted small" *ngIf="!summary()">
+              Upload both files and run a match to populate the summary.
+            </div>
+          </div>
+
+          <div *ngIf="summary() as summary" class="row g-3">
+            <div class="col-sm-6 col-lg-4">
+              <div class="summary-card bg-light rounded-3 p-3 h-100">
+                <div class="text-muted small">Total</div>
+                <div class="h4 mb-0">{{ summary.total }}</div>
+              </div>
+            </div>
+            <div class="col-sm-6 col-lg-4">
+              <div class="summary-card bg-light rounded-3 p-3 h-100">
+                <div class="text-muted small">Matched</div>
+                <div class="h4 mb-0">{{ summary.matched }}</div>
+              </div>
+            </div>
+            <div class="col-sm-6 col-lg-4">
+              <div class="summary-card bg-light rounded-3 p-3 h-100">
+                <div class="text-muted small">Only System</div>
+                <div class="h4 mb-0">{{ summary.onlySystem }}</div>
+              </div>
+            </div>
+            <div class="col-sm-6 col-lg-4">
+              <div class="summary-card bg-light rounded-3 p-3 h-100">
+                <div class="text-muted small">Only Provider</div>
+                <div class="h4 mb-0">{{ summary.onlyProvider }}</div>
+              </div>
+            </div>
+            <div class="col-sm-6 col-lg-4">
+              <div class="summary-card bg-light rounded-3 p-3 h-100">
+                <div class="text-muted small">Amount Mismatch</div>
+                <div class="h4 mb-0">{{ summary.amountMismatch }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+            <div>
+              <h2 class="h5 mb-1">Records</h2>
+              <p class="text-muted mb-0">Filter the latest run and resolve any open items.</p>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+              <label class="form-label mb-0 fw-semibold" for="filterSelect">Show</label>
+              <select
+                id="filterSelect"
+                class="form-select"
+                style="width: 200px;"
+                [ngModel]="selectedFilter()"
+                (ngModelChange)="setFilter($event)"
+              >
+                <option value="all">All</option>
+                <option value="resolved">Resolved</option>
+                <option value="unresolved">Unresolved</option>
+              </select>
+            </div>
+          </div>
+
+          <app-reusable-table
+            [rows]="filteredRecords()"
+            [columns]="tableColumns"
+            [actions]="tableActions()"
+            emptyMessage="No records available for the selected filter."
+          ></app-reusable-table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,18 @@
+.table-responsive {
+  border: 1px solid var(--bs-border-color-translucent);
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.table th,
+.table td {
+  vertical-align: middle;
+}
+
+.table thead th {
+  font-weight: 600;
+}
+
+.btn-sm {
+  min-width: 9rem;
+}

@@ -1,0 +1,38 @@
+<div class="table-responsive">
+  <table class="table table-hover align-middle mb-0">
+    <thead class="table-light">
+      <tr>
+        <th *ngFor="let column of columns">{{ column.label }}</th>
+        <th *ngIf="actions.length">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let row of rows; trackBy: trackByRow">
+        <td *ngFor="let column of columns" [class]="column.className">
+          {{ column.value(row) }}
+        </td>
+        <td *ngIf="actions.length">
+          <div class="d-flex flex-wrap gap-2">
+            <ng-container *ngFor="let action of actions">
+              <button
+                *ngIf="!action.visible || action.visible(row)"
+                type="button"
+                class="btn btn-sm"
+                [ngClass]="action.variant ? 'btn-' + action.variant : 'btn-outline-primary'"
+                [disabled]="action.disabled?.(row)"
+                (click)="action.onClick(row)"
+              >
+                {{ action.label }}
+              </button>
+            </ng-container>
+          </div>
+        </td>
+      </tr>
+      <tr *ngIf="!rows.length">
+        <td [attr.colspan]="columns.length + (actions.length ? 1 : 0)" class="text-center text-muted py-4">
+          {{ emptyMessage }}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
