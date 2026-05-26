@@ -1,7 +1,7 @@
 # ======================
 # Build output
 # ======================
-/dist
+/frontend/dist
 /out-tsc
 /tmp
 /bazel-out
@@ -10,15 +10,16 @@
 # ======================
 # Node
 # ======================
-node_modules/
-npm-debug.log*
-yarn-error.log*
+/frontend/node_modules/
+/frontend/npm-debug.log*
+/frontend/yarn-error.log*
 
 # ======================
 # Angular
 # ======================
 .angular/
 .angular/cache
+/frontend/.angular/
 
 # ======================
 # IDE - VS Code
@@ -50,3 +51,27 @@ __screenshots__/
 # ======================
 .DS_Store
 Thumbs.db
+
+# ======================
+# Backend - .NET
+# ======================
+/backend/**/bin/
+/backend/**/obj/
+/backend/**/Debug/
+/backend/**/Release/
+
+# Database files
+/backend/**/*.db
+/backend/**/*.sqlite
+/backend/**/*.db-journal
+
+# NuGet cache files
+/backend/project.nuget.cache
+
+# Visual Studio
+/.vs/
+*.user
+*.suo
+
+# Local development settings (uncomment to ignore)
+# /backend/**/appsettings.Development.json
