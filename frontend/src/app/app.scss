@@ -1,0 +1,41 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: none;
+}
+
+main.app-main {
+  flex: 1;
+}
+
+.card {
+  border-radius: 1rem;
+}
+
+.app-header {
+  background: #0b2e6f;
+  color: #ffffff;
+}
+
+.app-header .nav-link {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.app-header .nav-link:hover,
+.app-header .nav-link:focus {
+  color: #ffffff;
+}
+
+.app-footer {
+  background: #f1f2f4;
+  margin-top: auto;
+}
+
+.form-select,
+.form-control {
+  border-radius: 0.75rem;
+}
+.app-brand {
+  font-size: 1.1rem;
+}

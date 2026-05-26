@@ -1,0 +1,84 @@
+.summary-card {
+  min-height: 120px;
+  border: 1px solid rgba(13, 110, 253, 0.12);
+}
+.card-body {
+  min-height: 1px;
+}
+
+.upload-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100px;
+  width: 95%;
+  border: 2px dashed #6995c1;
+  border-radius: 1rem;
+  background: #edeff0;
+  color: #214364;
+  padding: 1.5rem;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+
+.upload-box:hover {
+  border-color: #0d6efd;
+  background: #eef4ff;
+}
+
+.btn-run {
+  width: auto;
+  max-width: 250px;
+  min-width: 200px;
+  padding: 0.5rem 1rem;
+}
+
+
+.upload-icon {
+  width: 48px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #0d6efd;
+  margin-bottom: 0.85rem;
+  border: 1px dotted #adb5bd;
+  border-radius: 0.75rem;
+  padding: 0.5rem;
+}
+
+.upload-icon i {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.upload-label {
+  font-weight: 600;
+  display: block;
+  margin-top: 0.25rem;
+}
+
+.upload-note {
+  font-size: 0.9rem;
+  color: #6c757d;
+  margin-top: 0.35rem;
+}
+
+.section-panel {
+  background: transparent;
+  border: none;
+}
+
+.section-heading {
+  margin-bottom: 2rem;
+}
+
+.section-summary,
+.section-records {
+  background: transparent;
+}
+
+
