@@ -25,6 +25,7 @@
 # IDE - VS Code
 # ======================
 .vscode/
+*.code-workspace
 
 # ======================
 # IDE - JetBrains

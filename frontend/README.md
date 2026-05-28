@@ -1,59 +1,43 @@
-# PaymentReconcileUi
+# Frontend - Payment Reconcile UI
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.12.
+Angular 21 application used as the user interface for the Payment Reconciliation Tool.
 
-## Development server
+Prerequisites
 
-To start a local development server, run:
+- Node.js (recommend Node 18+) and npm (this repo uses npm v10+)
+- Angular CLI (optional for local development)
 
-```bash
-ng serve
-```
-
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+Development server
 
 ```bash
-ng generate component component-name
+cd frontend
+npm install
+npm start
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Open http://localhost:4200/ in your browser. The app will reload on source changes.
+
+Build
 
 ```bash
-ng generate --help
+npm run build
 ```
 
-## Building
+Server-side rendering (SSR)
 
-To build the project run:
+This project includes SSR support. To run a built SSR server:
 
 ```bash
-ng build
+npm run build
+npm run serve:ssr:payment-reconcile-ui
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+Tests
 
 ```bash
-ng test
+npm test
 ```
 
-## Running end-to-end tests
+Notes
 
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+- See `package.json` for available scripts. The SSR entrypoint is `dist/payment-reconcile-ui/server/server.mjs` after a proper server build.
