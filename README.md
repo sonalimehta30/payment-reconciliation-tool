@@ -21,9 +21,10 @@ A full-stack application to reconcile and resolve payment records between system
 
 ## Quick Links
 
-- Backend: `backend/PaymentsMatching.Api`
-- Frontend: `frontend`
-- CSV samples: `provider-payment-records.csv`, `system-payments-records.csv`
+* [Backend](backend/PaymentsMatching.Api)
+* [Frontend](frontend)
+* [CSV samples](provider-payment-records.csv), [System payments](system-payments-records.csv)
+
 
 ## Prerequisites
 
@@ -88,7 +89,7 @@ See `backend/README.md` for endpoint details.
 * The number of records in each CSV file may vary and can be unequal.
 * The `Total` field in the summary represents the number of unique `order_id`s across both uploaded files.
 * After parsing both the files, the records table initially displays only unresolved records that have discrepancies.
-* The `Resolved` column displays `NA` when there is no mismatch in the record details, since no resolution is required in such cases.
+* The `Resolved` column displays `N/A` when there is no mismatch in the record details, since no resolution is required in such cases.
 
 ## Development Notes
 
