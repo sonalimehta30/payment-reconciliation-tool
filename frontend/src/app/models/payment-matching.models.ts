@@ -1,4 +1,4 @@
-export type PaymentStatus = 'MATCHED' | 'ONLYSYSTEM' | 'ONLYPROVIDER' | 'AMOUNTMISMATCH';
+export type PaymentStatus = 'Matched' | 'OnlySystem' | 'OnlyProvider' | 'AmountMismatch';
 export type ResolutionSide = 'System' | 'Provider' | null;
 
 export interface PaymentCsvRow {

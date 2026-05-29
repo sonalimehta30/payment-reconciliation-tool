@@ -10,7 +10,9 @@ public static class MatchEndpoints
     {
         var group = app.MapGroup("/api/match");
 
-        group.MapPost(string.Empty, async (HttpRequest request, MatchService matchService) =>
+        // Upload system and provider CSV files for backend match processing.
+        // The backend compares rows using orderId + currency and returns mismatched results.
+        group.MapPost("process", async (HttpRequest request, MatchService matchService) =>
         {
             if (!request.HasFormContentType)
             {
@@ -28,14 +30,25 @@ public static class MatchEndpoints
 
             var result = await matchService.RunMatchAsync(systemFile, providerFile);
             return Results.Ok(result);
-        });
+        })
+        .WithName("RunMatch")
+        .WithTags("Match")
+        .Accepts<IFormFile>("multipart/form-data")
+        .Produces<MatchResponseDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest);
 
-        group.MapGet(string.Empty, async (string? filter, MatchService matchService) =>
+        // Retrieve processed match records from the database with optional filtering by resolution state.
+        // This endpoint returns only the list of records (no summary).
+        group.MapGet("getMatches", async (string? filter, MatchService matchService) =>
         {
-            var result = await matchService.GetMatchesAsync(filter);
-            return Results.Ok(result);
-        });
+            var records = await matchService.GetMatchesAsync(filter);
+            return Results.Ok(records);
+        })
+        .WithName("GetMatches")
+        .WithTags("Match")
+        .Produces<IEnumerable<PaymentMatchRecordDto>>(StatusCodes.Status200OK);
 
+        // Mark a single mismatched record as resolved using the backend persistence layer.
         group.MapPost("resolve", async (ResolveRequestDto request, MatchService matchService) =>
         {
             if (request is null || string.IsNullOrWhiteSpace(request.RecordId) || string.IsNullOrWhiteSpace(request.ResolutionSide))
@@ -56,6 +69,12 @@ public static class MatchEndpoints
             {
                 return Results.BadRequest(ex.Message);
             }
-        });
+        })
+        .WithName("ResolveMatch")
+        .WithTags("Match")
+        .Accepts<ResolveRequestDto>("application/json")
+        .Produces<PaymentMatchRecordDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status404NotFound);
     }
 }

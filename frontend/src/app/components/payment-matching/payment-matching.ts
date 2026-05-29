@@ -1,12 +1,16 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-
 import {
-  ReusableTableComponent,
-  TableAction,
-  TableColumn,
-} from '../reusable-table/reusable-table';
+  FormsModule,
+  ReactiveFormsModule,
+  AbstractControl,
+  FormControl,
+  FormGroup,
+  ValidatorFn,
+  ValidationErrors,
+} from '@angular/forms';
+
+import { ReusableTableComponent, TableAction, TableColumn } from '../reusable-table/reusable-table';
 import {
   MatchFilter,
   MatchSummary,
@@ -17,7 +21,7 @@ import { PaymentMatchingService } from '../../services/payment-matching.service'
 @Component({
   selector: 'app-payment-matching',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReusableTableComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, ReusableTableComponent],
   templateUrl: './payment-matching.html',
   styleUrls: ['./payment-matching.scss'],
 })
@@ -25,8 +29,6 @@ export class PaymentMatchingComponent {
   private readonly paymentMatchingService = inject(PaymentMatchingService);
 
   readonly title = signal('Payments Matching');
-  readonly systemFile = signal<File | null>(null);
-  readonly providerFile = signal<File | null>(null);
   readonly records = signal<PaymentMatchRecord[]>([]);
   readonly summary = signal<MatchSummary | null>(null);
   readonly selectedFilter = signal<MatchFilter>('all');
@@ -34,23 +36,24 @@ export class PaymentMatchingComponent {
   readonly errorMessage = signal<string | null>(null);
   readonly successMessage = signal<string | null>(null);
 
-  readonly systemFileName = computed(() => this.systemFile()?.name ?? 'Upload a CSV file');
-  readonly providerFileName = computed(() => this.providerFile()?.name ?? 'Upload a CSV file');
-
-  readonly filteredRecords = computed(() => {
-    const filter = this.selectedFilter();
-    const records = this.records();
-
-    if (filter === 'resolved') {
-      return records.filter((record) => record.resolved);
-    }
-
-    if (filter === 'unresolved') {
-      return records.filter((record) => !record.resolved);
-    }
-
-    return records;
+  form: FormGroup = new FormGroup({
+    systemFile: new FormControl<File | null>(null, [this.csvFileValidator()]),
+    providerFile: new FormControl<File | null>(null, [this.csvFileValidator()]),
   });
+  systemFileControl!: FormControl<File | null>;
+  providerFileControl!: FormControl<File | null>;
+  filterControl: FormControl<MatchFilter | null> = new FormControl<MatchFilter>('unresolved');
+
+  ngOnInit(): void {
+    this.systemFileControl = this.form.get('systemFile') as FormControl<File | null>;
+    this.providerFileControl = this.form.get('providerFile') as FormControl<File | null>;
+    this.filterControl.valueChanges.subscribe((value) => {
+      if (value) this.onFilterChange(value as MatchFilter);
+    });
+  }
+
+  // Backend returns pre-filtered records; do not apply client-side filtering.
+  readonly filteredRecords = computed(() => this.records());
 
   readonly tableColumns: TableColumn<PaymentMatchRecord>[] = [
     {
@@ -82,7 +85,7 @@ export class PaymentMatchingComponent {
     {
       key: 'resolved',
       label: 'Resolved',
-      value: (row) => (row.resolved ? 'Yes' : 'No'),
+      value: (row) => this.formatResolved(row),
     },
     {
       key: 'resolutionSide',
@@ -96,38 +99,65 @@ export class PaymentMatchingComponent {
       id: 'accept-system',
       label: 'Accept System',
       variant: 'outline-primary',
-      visible: (row) => !row.resolved,
-      disabled: (row) => row.systemAmount === null || row.status === 'MATCHED',
+      visible: (row) => row.status !== 'Matched' && !row.resolved,
+      disabled: (row) => row.systemAmount === null,
       onClick: (row) => this.acceptResolution(row, 'System'),
     },
     {
       id: 'accept-provider',
       label: 'Accept Provider',
       variant: 'outline-success',
-      visible: (row) => !row.resolved,
-      disabled: (row) => row.providerAmount === null || row.status === 'MATCHED',
+      visible: (row) => row.status !== 'Matched' && !row.resolved,
+      disabled: (row) => row.providerAmount === null,
       onClick: (row) => this.acceptResolution(row, 'Provider'),
     },
   ]);
 
   onSystemFileChange(event: Event): void {
     const input = event.target as HTMLInputElement;
-    this.systemFile.set(input.files?.[0] ?? null);
+    const file = input.files?.[0] ?? null;
+    this.systemFileControl.markAsTouched();
+    this.systemFileControl.setErrors(null);
+
+    if (file && !this.isCsvFile(file)) {
+      this.systemFileControl.setValue(null);
+      this.systemFileControl.setErrors({ unsupportedFileType: true });
+      this.errorMessage.set('Unsupported file type. Please upload a .csv file.');
+      return;
+    }
+
+    this.systemFileControl.setValue(file);
     this.resetMessages();
   }
 
   onProviderFileChange(event: Event): void {
     const input = event.target as HTMLInputElement;
-    this.providerFile.set(input.files?.[0] ?? null);
+    const file = input.files?.[0] ?? null;
+    this.providerFileControl.markAsTouched();
+    this.providerFileControl.setErrors(null);
+
+    if (file && !this.isCsvFile(file)) {
+      this.providerFileControl.setValue(null);
+      this.providerFileControl.setErrors({ unsupportedFileType: true });
+      this.errorMessage.set('Unsupported file type. Please upload a .csv file.');
+      return;
+    }
+
+    this.providerFileControl.setValue(file);
     this.resetMessages();
   }
 
-  async onRunMatch(): Promise<void> {
-    const systemFile = this.systemFile();
-    const providerFile = this.providerFile();
+  onRunMatch(): void {
+    const systemFile = this.systemFileControl.value;
+    const providerFile = this.providerFileControl.value;
 
     if (!systemFile || !providerFile) {
       this.errorMessage.set('Please upload both the System CSV and Provider CSV files.');
+      return;
+    }
+
+    if (this.form.invalid) {
+      this.errorMessage.set('Unsupported file type. Please upload valid .csv files.');
       return;
     }
 
@@ -135,28 +165,81 @@ export class PaymentMatchingComponent {
     this.errorMessage.set(null);
     this.successMessage.set(null);
 
-    try {
-      const response = await this.paymentMatchingService.runMatch(systemFile, providerFile);
-      this.summary.set(response.summary);
-      this.records.set(response.records);
-      this.successMessage.set('Match completed. Review the results and resolve any open items.');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to process the CSV files.';
-      this.errorMessage.set(message);
-      this.summary.set(null);
-      this.records.set([]);
-    } finally {
-      this.isLoading.set(false);
-    }
+    this.paymentMatchingService.runMatch(systemFile, providerFile).subscribe({
+      next: (response) => {
+        this.summary.set(response.summary);
+        this.records.set(response.records);
+        this.successMessage.set('Match completed. Review the results and resolve any open items.');
+        this.isLoading.set(false);
+      },
+      error: (error) => {
+        const message = error instanceof Error ? error.message : 'Unable to process the CSV files.';
+        this.errorMessage.set(message);
+        this.summary.set(null);
+        this.records.set([]);
+        this.isLoading.set(false);
+      },
+    });
+  }
+
+  private isCsvFile(file: File): boolean {
+    return /\.csv$/i.test(file.name);
+  }
+
+  private csvFileValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const file = control.value as File | null;
+      if (!file) {
+        return null;
+      }
+
+      return this.isCsvFile(file) ? null : { unsupportedFileType: true };
+    };
   }
 
   onFilterChange(value: MatchFilter): void {
     this.selectedFilter.set(value);
+    this.isLoading.set(true);
+    this.errorMessage.set(null);
+
+    const filterParam = value === 'all' ? undefined : value;
+    this.paymentMatchingService.getMatches(filterParam).subscribe({
+      next: (records) => {
+        // getMatches returns only records; summary is managed from the process API
+        this.records.set(records);
+        this.isLoading.set(false);
+      },
+      error: (err) => {
+        const message = err instanceof Error ? err.message : 'Unable to fetch filtered records.';
+        this.errorMessage.set(message);
+        this.isLoading.set(false);
+      },
+    });
   }
 
   acceptResolution(record: PaymentMatchRecord, resolutionSide: 'System' | 'Provider'): void {
-    this.records.set(this.paymentMatchingService.resolveRecord(this.records(), record.id, resolutionSide));
-    this.successMessage.set(`Resolution saved for order ${record.orderId} as ${resolutionSide}.`);
+    this.isLoading.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
+    this.paymentMatchingService.resolveMatch(record.id, resolutionSide).subscribe({
+      next: (updatedRecord) => {
+        this.records.set(
+          this.records().map((current) =>
+            current.id === updatedRecord.id ? updatedRecord : current,
+          ),
+        );
+        this.successMessage.set(
+          `Resolution saved for order ${record.orderId} as ${resolutionSide}.`,
+        );
+        this.isLoading.set(false);
+      },
+      error: (error) => {
+        const message = error instanceof Error ? error.message : 'Unable to save the resolution.';
+        this.errorMessage.set(message);
+        this.isLoading.set(false);
+      },
+    });
   }
 
   private formatStatus(status: PaymentMatchRecord['status']): string {
@@ -169,6 +252,10 @@ export class PaymentMatchingComponent {
 
   private formatAmount(amount: number | null): string {
     return amount === null ? '—' : amount.toFixed(2);
+  }
+  
+  private formatResolved(rowData: PaymentMatchRecord): string {
+    return rowData.status !== 'Matched' ? (rowData.resolved ? 'Yes' : 'No') : 'N/A';
   }
 
   private resetMessages(): void {
