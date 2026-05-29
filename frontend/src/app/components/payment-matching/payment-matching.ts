@@ -10,11 +10,7 @@ import {
   ValidationErrors,
 } from '@angular/forms';
 
-import {
-  ReusableTableComponent,
-  TableAction,
-  TableColumn,
-} from '../reusable-table/reusable-table';
+import { ReusableTableComponent, TableAction, TableColumn } from '../reusable-table/reusable-table';
 import {
   MatchFilter,
   MatchSummary,
@@ -39,20 +35,19 @@ export class PaymentMatchingComponent {
   readonly isLoading = signal(false);
   readonly errorMessage = signal<string | null>(null);
   readonly successMessage = signal<string | null>(null);
-  
-  form:FormGroup = new FormGroup({
+
+  form: FormGroup = new FormGroup({
     systemFile: new FormControl<File | null>(null, [this.csvFileValidator()]),
     providerFile: new FormControl<File | null>(null, [this.csvFileValidator()]),
   });
   systemFileControl!: FormControl<File | null>;
   providerFileControl!: FormControl<File | null>;
-    
+
   ngOnInit(): void {
     this.systemFileControl = this.form.get('systemFile') as FormControl<File | null>;
     this.providerFileControl = this.form.get('providerFile') as FormControl<File | null>;
   }
 
-  
   readonly filteredRecords = computed(() => {
     const filter = this.selectedFilter();
     const records = this.records();
@@ -212,9 +207,31 @@ export class PaymentMatchingComponent {
     this.selectedFilter.set(value);
   }
 
-  acceptResolution(record: PaymentMatchRecord, resolutionSide: 'System' | 'Provider'): void {
-    this.records.set(this.paymentMatchingService.resolveRecord(this.records(), record.id, resolutionSide));
-    this.successMessage.set(`Resolution saved for order ${record.orderId} as ${resolutionSide}.`);
+  async acceptResolution(
+    record: PaymentMatchRecord,
+    resolutionSide: 'System' | 'Provider',
+  ): Promise<void> {
+    this.isLoading.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
+    try {
+      const updatedRecord = await this.paymentMatchingService.resolveMatch(
+        record.id,
+        resolutionSide,
+      );
+      this.records.set(
+        this.records().map((current) =>
+          current.id === updatedRecord.id ? updatedRecord : current,
+        ),
+      );
+      this.successMessage.set(`Resolution saved for order ${record.orderId} as ${resolutionSide}.`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to save the resolution.';
+      this.errorMessage.set(message);
+    } finally {
+      this.isLoading.set(false);
+    }
   }
 
   private formatStatus(status: PaymentMatchRecord['status']): string {

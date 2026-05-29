@@ -18,6 +18,7 @@ export class PaymentMatchingService {
     }
 
     if (typeof window !== 'undefined' && window.location.hostname) {
+      // hardcoded port for backend API - in a real app this would be handled via environment variables or a config file
       const origin = `${window.location.protocol}//${window.location.hostname}:5146`;
       return `${origin}/api/match`;
     }
@@ -33,19 +34,15 @@ export class PaymentMatchingService {
     return firstValueFrom(this.http.post<MatchRunResponse>(this.apiUrl, formData));
   }
 
-  resolveRecord(
-    records: PaymentMatchRecord[],
+  async resolveMatch(
     recordId: string,
     resolutionSide: 'System' | 'Provider',
-  ): PaymentMatchRecord[] {
-    return records.map((record) =>
-      record.id === recordId
-        ? {
-            ...record,
-            resolved: true,
-            resolutionSide,
-          }
-        : record,
+  ): Promise<PaymentMatchRecord> {
+    return firstValueFrom(
+      this.http.post<PaymentMatchRecord>(`${this.apiUrl}/resolve`, {
+        recordId,
+        resolutionSide,
+      }),
     );
   }
 }
