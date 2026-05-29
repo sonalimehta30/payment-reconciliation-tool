@@ -42,26 +42,18 @@ export class PaymentMatchingComponent {
   });
   systemFileControl!: FormControl<File | null>;
   providerFileControl!: FormControl<File | null>;
+  filterControl: FormControl<MatchFilter | null> = new FormControl<MatchFilter>('unresolved');
 
   ngOnInit(): void {
     this.systemFileControl = this.form.get('systemFile') as FormControl<File | null>;
     this.providerFileControl = this.form.get('providerFile') as FormControl<File | null>;
+    this.filterControl.valueChanges.subscribe((value) => {
+      if (value) this.onFilterChange(value as MatchFilter);
+    });
   }
 
-  readonly filteredRecords = computed(() => {
-    const filter = this.selectedFilter();
-    const records = this.records();
-
-    if (filter === 'resolved') {
-      return records.filter((record) => record.resolved);
-    }
-
-    if (filter === 'unresolved') {
-      return records.filter((record) => !record.resolved);
-    }
-
-    return records;
-  });
+  // Backend returns pre-filtered records; do not apply client-side filtering.
+  readonly filteredRecords = computed(() => this.records());
 
   readonly tableColumns: TableColumn<PaymentMatchRecord>[] = [
     {
@@ -107,16 +99,16 @@ export class PaymentMatchingComponent {
       id: 'accept-system',
       label: 'Accept System',
       variant: 'outline-primary',
-      visible: (row) => !row.resolved,
-      disabled: (row) => row.systemAmount === null || row.status === 'MATCHED',
+      visible: (row) => row.status !== 'Matched' && !row.resolved,
+      disabled: (row) => row.systemAmount === null,
       onClick: (row) => this.acceptResolution(row, 'System'),
     },
     {
       id: 'accept-provider',
       label: 'Accept Provider',
       variant: 'outline-success',
-      visible: (row) => !row.resolved,
-      disabled: (row) => row.providerAmount === null || row.status === 'MATCHED',
+      visible: (row) => row.status !== 'Matched' && !row.resolved,
+      disabled: (row) => row.providerAmount === null,
       onClick: (row) => this.acceptResolution(row, 'Provider'),
     },
   ]);
@@ -155,7 +147,7 @@ export class PaymentMatchingComponent {
     this.resetMessages();
   }
 
-  async onRunMatch(): Promise<void> {
+  onRunMatch(): void {
     const systemFile = this.systemFileControl.value;
     const providerFile = this.providerFileControl.value;
 
@@ -173,19 +165,21 @@ export class PaymentMatchingComponent {
     this.errorMessage.set(null);
     this.successMessage.set(null);
 
-    try {
-      const response = await this.paymentMatchingService.runMatch(systemFile, providerFile);
-      this.summary.set(response.summary);
-      this.records.set(response.records);
-      this.successMessage.set('Match completed. Review the results and resolve any open items.');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to process the CSV files.';
-      this.errorMessage.set(message);
-      this.summary.set(null);
-      this.records.set([]);
-    } finally {
-      this.isLoading.set(false);
-    }
+    this.paymentMatchingService.runMatch(systemFile, providerFile).subscribe({
+      next: (response) => {
+        this.summary.set(response.summary);
+        this.records.set(response.records);
+        this.successMessage.set('Match completed. Review the results and resolve any open items.');
+        this.isLoading.set(false);
+      },
+      error: (error) => {
+        const message = error instanceof Error ? error.message : 'Unable to process the CSV files.';
+        this.errorMessage.set(message);
+        this.summary.set(null);
+        this.records.set([]);
+        this.isLoading.set(false);
+      },
+    });
   }
 
   private isCsvFile(file: File): boolean {
@@ -205,33 +199,47 @@ export class PaymentMatchingComponent {
 
   onFilterChange(value: MatchFilter): void {
     this.selectedFilter.set(value);
+    this.isLoading.set(true);
+    this.errorMessage.set(null);
+
+    const filterParam = value === 'all' ? undefined : value;
+    this.paymentMatchingService.getMatches(filterParam).subscribe({
+      next: (records) => {
+        // getMatches returns only records; summary is managed from the process API
+        this.records.set(records);
+        this.isLoading.set(false);
+      },
+      error: (err) => {
+        const message = err instanceof Error ? err.message : 'Unable to fetch filtered records.';
+        this.errorMessage.set(message);
+        this.isLoading.set(false);
+      },
+    });
   }
 
-  async acceptResolution(
-    record: PaymentMatchRecord,
-    resolutionSide: 'System' | 'Provider',
-  ): Promise<void> {
+  acceptResolution(record: PaymentMatchRecord, resolutionSide: 'System' | 'Provider'): void {
     this.isLoading.set(true);
     this.errorMessage.set(null);
     this.successMessage.set(null);
 
-    try {
-      const updatedRecord = await this.paymentMatchingService.resolveMatch(
-        record.id,
-        resolutionSide,
-      );
-      this.records.set(
-        this.records().map((current) =>
-          current.id === updatedRecord.id ? updatedRecord : current,
-        ),
-      );
-      this.successMessage.set(`Resolution saved for order ${record.orderId} as ${resolutionSide}.`);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to save the resolution.';
-      this.errorMessage.set(message);
-    } finally {
-      this.isLoading.set(false);
-    }
+    this.paymentMatchingService.resolveMatch(record.id, resolutionSide).subscribe({
+      next: (updatedRecord) => {
+        this.records.set(
+          this.records().map((current) =>
+            current.id === updatedRecord.id ? updatedRecord : current,
+          ),
+        );
+        this.successMessage.set(
+          `Resolution saved for order ${record.orderId} as ${resolutionSide}.`,
+        );
+        this.isLoading.set(false);
+      },
+      error: (error) => {
+        const message = error instanceof Error ? error.message : 'Unable to save the resolution.';
+        this.errorMessage.set(message);
+        this.isLoading.set(false);
+      },
+    });
   }
 
   private formatStatus(status: PaymentMatchRecord['status']): string {

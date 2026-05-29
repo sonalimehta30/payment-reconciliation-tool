@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { Observable } from 'rxjs';
 
 import { MatchRunResponse, PaymentMatchRecord } from '../models/payment-matching.models';
 
@@ -18,7 +18,8 @@ export class PaymentMatchingService {
     }
 
     if (typeof window !== 'undefined' && window.location.hostname) {
-      // hardcoded port for backend API - in a real app this would be handled via environment variables or a config file
+      // hardcoded port 5146(as per my device) for backend API -
+      // in a real app this would be handled via environment variables or a config file
       const origin = `${window.location.protocol}//${window.location.hostname}:5146`;
       return `${origin}/api/match`;
     }
@@ -26,23 +27,23 @@ export class PaymentMatchingService {
     return 'http://localhost:5000/api/match';
   }
 
-  async runMatch(systemFile: File, providerFile: File): Promise<MatchRunResponse> {
+  runMatch(systemFile: File, providerFile: File): Observable<MatchRunResponse> {
     const formData = new FormData();
     formData.append('systemFile', systemFile, systemFile.name);
     formData.append('providerFile', providerFile, providerFile.name);
 
-    return firstValueFrom(this.http.post<MatchRunResponse>(this.apiUrl, formData));
+    return this.http.post<MatchRunResponse>(`${this.apiUrl}/process`, formData);
   }
 
-  async resolveMatch(
-    recordId: string,
-    resolutionSide: 'System' | 'Provider',
-  ): Promise<PaymentMatchRecord> {
-    return firstValueFrom(
-      this.http.post<PaymentMatchRecord>(`${this.apiUrl}/resolve`, {
-        recordId,
-        resolutionSide,
-      }),
-    );
+  getMatches(filter?: string): Observable<PaymentMatchRecord[]> {
+    const options = filter ? { params: { filter } } : {};
+    return this.http.get<PaymentMatchRecord[]>(`${this.apiUrl}/getMatches`, options);
+  }
+
+  resolveMatch(recordId: string, resolutionSide: 'System' | 'Provider'): Observable<PaymentMatchRecord> {
+    return this.http.post<PaymentMatchRecord>(`${this.apiUrl}/resolve`, {
+      recordId,
+      resolutionSide,
+    });
   }
 }

@@ -27,7 +27,9 @@
                 <i class="fa-solid fa-upload"></i>
               </div>
               <span class="upload-label">System CSV</span>
-              <span class="upload-note">{{systemFileControl.value?.name || 'Upload a CSV file' }}</span>
+              <span class="upload-note">{{
+                systemFileControl.value?.name || 'Upload a CSV file'
+              }}</span>
             </label>
             <input
               id="systemFile"
@@ -40,7 +42,7 @@
               *ngIf="systemFileControl.errors?.['unsupportedFileType'] && systemFileControl.touched"
               class="text-danger small mt-1"
             >
-            Only .csv files are accepted.
+              Only .csv files are accepted.
             </div>
           </div>
 
@@ -50,7 +52,9 @@
                 <i class="fa-solid fa-upload"></i>
               </div>
               <span class="upload-label">Provider CSV</span>
-              <span class="upload-note">{{ providerFileControl.value?.name || 'Upload a CSV file' }}</span>
+              <span class="upload-note">{{
+                providerFileControl.value?.name || 'Upload a CSV file'
+              }}</span>
             </label>
             <input
               id="providerFile"
@@ -65,7 +69,7 @@
               "
               class="text-danger small mt-1"
             >
-            Only .csv files are accepted.
+              Only .csv files are accepted.
             </div>
           </div>
         </div>
@@ -136,8 +140,7 @@
           id="filterSelect"
           class="form-select"
           style="width: 200px"
-          [ngModel]="selectedFilter()"
-          (ngModelChange)="onFilterChange($event)"
+          [formControl]="filterControl"
         >
           <option value="all">All</option>
           <option value="resolved">Resolved</option>
