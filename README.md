@@ -21,8 +21,8 @@ A full-stack application to reconcile and resolve payment records between system
 
 ## Quick Links
 
-- Backend: [`backend/PaymentsMatching.Api`] (backend/PaymentsMatching.Api)
-- Frontend: [`frontend`] (frontend)
+- Backend: `backend/PaymentsMatching.Api`
+- Frontend: `frontend`
 - CSV samples: `provider-payment-records.csv`, `system-payments-records.csv`
 
 ## Prerequisites
