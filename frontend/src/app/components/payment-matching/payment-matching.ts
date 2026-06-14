@@ -28,7 +28,7 @@ import { PaymentMatchingService } from '../../services/payment-matching.service'
 export class PaymentMatchingComponent {
   private readonly paymentMatchingService = inject(PaymentMatchingService);
 
-  readonly title = signal('Payments Matching');
+  // readonly title = signal('Payments Matching');
   readonly records = signal<PaymentMatchRecord[]>([]);
   readonly summary = signal<MatchSummary | null>(null);
   readonly currentSessionId = signal<string | null>(null);
